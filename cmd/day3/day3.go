@@ -1,19 +1,19 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
+    "bufio"
+    "bytes"
     "fmt"
-	"strconv"
-	logger "advent2021/adventlogger"
-	reader "advent2021/adventreader"
+    "strconv"
+    logger "advent2021/adventlogger"
+    reader "advent2021/adventreader"
 )
 
 func main() {
-	result := part1()
-	logger.Logs.Infof("Part one result: %d", result)
-	result = part2()
-	logger.Logs.Infof("Part two result: %d", result)
+    result := part1()
+    logger.Logs.Infof("Part one result: %d", result)
+    result = part2()
+    logger.Logs.Infof("Part two result: %d", result)
 }
 
 type commonBinary struct {
@@ -101,7 +101,7 @@ func (cb *commonBinary) UncommonAtIndex(index int) string {
 }
 
 func part1() int {
-	input := bytes.NewBuffer(reader.FromFile("p1"))
+    input := bytes.NewBuffer(reader.FromFile("p1"))
     var lines []string
     scanner := bufio.NewScanner(input)
     for scanner.Scan() {
@@ -117,7 +117,7 @@ func part1() int {
 }
 
 func part2() int {
-	input := bytes.NewBuffer(reader.FromFile("p2"))
+    input := bytes.NewBuffer(reader.FromFile("p2"))
     var lines []string
     scanner := bufio.NewScanner(input)
     for scanner.Scan() {
