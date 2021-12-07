@@ -1,9 +1,6 @@
 package main
 
 import (
-    "bufio"
-    "bytes"
-    "fmt"
     "math"
     "regexp"
     "sort"
@@ -58,19 +55,8 @@ func max(ints []int) int {
     return max
 }
 
-func inputLines(part int) []string {
-    input := bytes.NewBuffer(reader.FromFile("p"+fmt.Sprintf("%d", part)))
-    scanner := bufio.NewScanner(input)
-    var lines []string
-    for scanner.Scan() {
-        lines = append(lines, scanner.Text())
-    }
-    return lines
-}
-
-
 func part1() int {
-    lines := inputLines(1)
+    lines := reader.LinesFromFile("input.txt")
     crabXs := linesToInts(lines)
     logger.Logs.Infof("Crab positions: %d", crabXs)
     finalPosition, fuel := median(crabXs), 0
@@ -81,7 +67,7 @@ func part1() int {
 }
 
 func part2() int {
-    lines := inputLines(2)
+    lines := reader.LinesFromFile("input.txt")
     crabXs := linesToInts(lines)
     logger.Logs.Infof("Crab positions: %d", crabXs)
     fuel, minFuel := 0, -1

@@ -1,9 +1,6 @@
 package main
 
 import (
-    "bufio"
-    "bytes"
-    "fmt"
     "regexp"
     "strconv"
     logger "advent2021/adventlogger"
@@ -49,19 +46,8 @@ func makeAnglersFromLines(lines []string) map[int]int {
     return anglers
 }
 
-func inputLines(part int) []string {
-    input := bytes.NewBuffer(reader.FromFile("p"+fmt.Sprintf("%d", part)))
-    scanner := bufio.NewScanner(input)
-    var lines []string
-    for scanner.Scan() {
-        lines = append(lines, scanner.Text())
-    }
-    return lines
-}
-
-
 func part1() int {
-    lines := inputLines(1)
+    lines := reader.LinesFromFile("input.txt")
     anglers := makeAnglersFromLines(lines)
     logger.Logs.Infof("Anglers: %d", anglers)
     for i := 0; i < DaysToAnalyze; i++ {
@@ -76,7 +62,7 @@ func part1() int {
 }
 
 func part2() int {
-    lines := inputLines(2)
+    lines := reader.LinesFromFile("input.txt")
     anglers := makeAnglersFromLines(lines)
     logger.Logs.Infof("Anglers: %d", anglers)
     for i := 0; i < 256; i++ {

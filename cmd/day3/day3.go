@@ -1,8 +1,6 @@
 package main
 
 import (
-    "bufio"
-    "bytes"
     "fmt"
     "strconv"
     logger "advent2021/adventlogger"
@@ -101,12 +99,7 @@ func (cb *commonBinary) UncommonAtIndex(index int) string {
 }
 
 func part1() int {
-    input := bytes.NewBuffer(reader.FromFile("p1"))
-    var lines []string
-    scanner := bufio.NewScanner(input)
-    for scanner.Scan() {
-        lines = append(lines, scanner.Text())
-    }
+    lines := reader.LinesFromFile("input.txt")
     cb := commonBinary{lines: lines}
     cb.CountCommon()
     more, less := cb.Commonality()
@@ -117,13 +110,7 @@ func part1() int {
 }
 
 func part2() int {
-    input := bytes.NewBuffer(reader.FromFile("p2"))
-    var lines []string
-    scanner := bufio.NewScanner(input)
-    for scanner.Scan() {
-        line := scanner.Text()
-        lines = append(lines, line)
-    }
+    lines := reader.LinesFromFile("input.txt")
 
     // Get O2 rating
     cb := commonBinary{lines: lines}

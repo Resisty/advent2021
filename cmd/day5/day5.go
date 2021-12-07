@@ -1,8 +1,6 @@
 package main
 
 import (
-    "bufio"
-    "bytes"
     "fmt"
     "regexp"
     "strconv"
@@ -149,19 +147,8 @@ func boardFromInput(lines []string, choice ...string) *Board {
     return board
 }
 
-func inputLines(part int) []string {
-    input := bytes.NewBuffer(reader.FromFile("p"+fmt.Sprintf("%d", part)))
-    scanner := bufio.NewScanner(input)
-    var lines []string
-    for scanner.Scan() {
-        lines = append(lines, scanner.Text())
-    }
-    return lines
-}
-
-
 func part1() int {
-    lines := inputLines(2)
+    lines := reader.LinesFromFile("input.txt")
     board := boardFromInput(lines, "hv")
     sum := 0
     for _, height := range board.heights {
@@ -174,7 +161,7 @@ func part1() int {
 }
 
 func part2() int {
-    lines := inputLines(2)
+    lines := reader.LinesFromFile("input.txt")
     board := boardFromInput(lines, "hvd")
     sum := 0
     for _, height := range board.heights {

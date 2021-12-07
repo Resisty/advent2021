@@ -16,7 +16,7 @@ func main() {
 }
 
 func part1() int {
-    input := bytes.NewBuffer(reader.FromFile("p1"))
+    input := bytes.NewBuffer(reader.FromFile("input.txt"))
     start, prev, count := false, 0, 0
     scanner := bufio.NewScanner(input)
     for scanner.Scan() {
@@ -40,7 +40,7 @@ func part1() int {
 }
 
 func part2() int {
-    input := bytes.NewBuffer(reader.FromFile("p2"))
+    input := bytes.NewBuffer(reader.FromFile("input.txt"))
     scanner := bufio.NewScanner(input)
     var entries []int
     for scanner.Scan() {

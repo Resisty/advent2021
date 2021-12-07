@@ -1,8 +1,6 @@
 package main
 
 import (
-    "bufio"
-    "bytes"
     "fmt"
     "regexp"
     "strconv"
@@ -151,12 +149,7 @@ func gameFromInput(lines []string) ([]int, []Board) {
 
 
 func part1() int {
-    input := bytes.NewBuffer(reader.FromFile("p1"))
-    scanner := bufio.NewScanner(input)
-    var lines []string
-    for scanner.Scan() {
-        lines = append(lines, scanner.Text())
-    }
+    lines := reader.LinesFromFile("input.txt")
     bingoCalls, boards := gameFromInput(lines)
     // logger.Logs.Infof("Bingo numbers to call: %d", bingoCalls)
     // logger.Logs.Infof("%d Boards to play", len(boards))
@@ -177,12 +170,7 @@ func part1() int {
 }
 
 func part2() int {
-    input := bytes.NewBuffer(reader.FromFile("p2"))
-    scanner := bufio.NewScanner(input)
-    var lines []string
-    for scanner.Scan() {
-        lines = append(lines, scanner.Text())
-    }
+    lines := reader.LinesFromFile("input.txt")
     bingoCalls, boards := gameFromInput(lines)
     // logger.Logs.Infof("Bingo numbers to call: %d", bingoCalls)
     // logger.Logs.Infof("%d Boards to play", len(boards))

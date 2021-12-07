@@ -18,7 +18,7 @@ func main() {
 
 func part1() int {
     x_pos, y_pos := 0, 0
-    input := bytes.NewBuffer(reader.FromFile("p1"))
+    input := bytes.NewBuffer(reader.FromFile("input.txt"))
     scanner := bufio.NewScanner(input)
     for scanner.Scan() {
         tokens := strings.Split(scanner.Text(), " ")
@@ -39,7 +39,7 @@ func part1() int {
 
 func part2() int {
     x_pos, y_pos, aim := 0, 0, 0
-    input := bytes.NewBuffer(reader.FromFile("p2"))
+    input := bytes.NewBuffer(reader.FromFile("input.txt"))
     scanner := bufio.NewScanner(input)
     for scanner.Scan() {
         tokens := strings.Split(scanner.Text(), " ")
