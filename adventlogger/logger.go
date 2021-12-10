@@ -20,6 +20,7 @@ func GetLoggers(traceHandle io.Writer,
                 warningHandle io.Writer,
                 errorHandle io.Writer) *(logger) {
     formatter := &logrus.JSONFormatter{
+        DisableHTMLEscape: true,
         FieldMap: logrus.FieldMap{
             logrus.FieldKeyTime: "timestamp",
             logrus.FieldKeyLevel: "level",
