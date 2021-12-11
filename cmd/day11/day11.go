@@ -46,14 +46,10 @@ type Board struct {
 }
 
 func (b *Board) Print() {
-    octoList := make([]*Octopus, 0)
-    for _, octo := range b.octopuses {
-        octoList = append(octoList, octo)
-    }
     for i := 0; i < b.width; i++ {
         s := ""
         for j := 0; j < b.height; j++ {
-            s += strconv.Itoa(octoList[i*b.width + j].energy)
+            s += strconv.Itoa(b.octopuses[Point{i, j}].energy)
         }
         fmt.Println(s)
     }
@@ -146,6 +142,7 @@ func part1() int {
 func part2() int {
     lines := reader.LinesFromFile("input.txt")
     board := boardFromInput(lines)
+    board.Print()
     i := 0
     for board.Step() {
         i+= 1
