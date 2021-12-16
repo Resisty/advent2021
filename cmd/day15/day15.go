@@ -4,11 +4,14 @@ import (
     "fmt"
     "sort"
     "strconv"
+    "strings"
     logger "advent2021/adventlogger"
     reader "advent2021/adventreader"
 )
 
 const MaxInt = int(^uint(0) >> 1)
+const ColorGreen ="\033[1;32m%s\033[0m"
+const ColorNone ="%s"
 
 type Point struct {
     x, y int
@@ -18,6 +21,8 @@ type CostPoint struct {
     Point
     cost int
     dist int
+    color string
+    prevInPath *CostPoint
 }
 
 type CostPoints []*CostPoint
@@ -54,11 +59,30 @@ func (c CostPoint) String() string {
     return fmt.Sprintf("(%d,%d):%d", c.x, c.y, c.dist)
 }
 
-
 func NewBoard(h, w int) *Board {
     points := make(map[Point]*CostPoint)
     board := Board{points: points, height: h, width: w}
     return &board
+}
+
+func (b *Board) Print(attr string) {
+    decision := map[string]func(c *CostPoint)int{
+        "cost": func(c *CostPoint)int{ return c.cost },
+        "dist": func(c *CostPoint)int{ return c.dist },
+    }
+    for y := 0; y < b.height; y++ {
+        line := make([]string, 0)
+        for x := 0; x < b.width; x++ {
+            costPoint := b.points[Point{x, y}]
+            val := decision[attr](costPoint)
+            char := strconv.Itoa(val)
+            if val == MaxInt {
+                char = "#"
+            }
+            line = append(line, fmt.Sprintf(costPoint.color, char))
+        }
+        fmt.Println(strings.Join(line, " "))
+    }
 }
 
 func (b *Board) KayakDotCom() int {
@@ -78,12 +102,20 @@ func (b *Board) KayakDotCom() int {
             }
             if point.dist > curr.dist + point.cost {
                 point.dist = curr.dist + point.cost
+                point.prevInPath = curr
                 costList = append(costList, point)
             }
         }
         sort.Sort(CostPoints(costList))
     }
-    return b.points[Point{b.width - 1, b.height - 1}].dist
+    final := b.points[Point{b.width - 1, b.height - 1}]
+    final.color = ColorGreen
+    prev := final.prevInPath
+    for prev != nil {
+        prev.color = ColorGreen
+        prev = prev.prevInPath
+    }
+    return final.dist
 }
 
 func boardsFromInput(lines []string) *Board {
@@ -98,7 +130,7 @@ func boardsFromInput(lines []string) *Board {
             if x == 0 && y == 0 {
                 dist = 0 // origin has no cost to enter and therefore no dist
             }
-            board.points[point] = &CostPoint{point, cost, dist}
+            board.points[point] = &CostPoint{point, cost, dist, ColorNone, nil}
         }
     }
     return board
@@ -119,7 +151,7 @@ func (b *Board) Embiggen() *Board {
                 if newCost >= 10 {
                     newCost = newCost % 10 + 1
                 }
-                newCostPoint := &CostPoint{translate, newCost, dist}
+                newCostPoint := &CostPoint{translate, newCost, dist, ColorNone, nil}
                 bigBoard.points[translate] = newCostPoint
                 count += 1
             }
@@ -138,12 +170,16 @@ func main() {
 func part1() int {
     lines := reader.LinesFromFile("input.txt")
     board := boardsFromInput(lines)
-    return board.KayakDotCom()
+    val := board.KayakDotCom()
+    board.Print("cost")
+    return val
 }
 
 func part2() int {
     lines := reader.LinesFromFile("input.txt")
     board := boardsFromInput(lines)
     board = board.Embiggen()
-    return board.KayakDotCom()
+    val := board.KayakDotCom()
+    board.Print("cost")
+    return val
 }
