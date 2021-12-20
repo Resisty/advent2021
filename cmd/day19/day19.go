@@ -207,6 +207,7 @@ func part1() int {
             // count it as oriented
             nowOriented := unoriented[removeLabel][acceptableOrientedIndex]
             nowOriented.translate(translation)
+            logger.Logs.Infof("Scanner with label %s has origin at %v", removeLabel, translation)
             oriented = append(oriented, nowOriented)
             delete(unoriented, removeLabel)
         }
@@ -221,6 +222,76 @@ func part1() int {
 }
 
 func part2() int {
-    // lines := reader.LinesFromFile("test.txt")
-    return 4 
+    lines := reader.LinesFromFile("input.txt")
+    scanners := scannersFromInput(lines)
+    totalScanners := len(scanners)
+    origin := scanners[0]
+    scanners = scanners[1:]
+    unoriented := make(map[string][]*Scanner)
+    for _, scanner := range scanners {
+        unorientedList := make([]*Scanner, 0)
+        unoriented[scanner.label] = append(unorientedList, scanner.createOrientations()...)
+    }
+    oriented := make([]*Scanner, 0)
+    oriented = append(oriented, origin)
+    minTolerance := 12
+    translation := Point{0, 0, 0}
+    origins := make([]Point, 0)
+    origins = append(origins, Point{0, 0, 0})
+    for len(oriented) < totalScanners {
+        max := 0
+        acceptableOrientedIndex := -1
+        removeLabel := ""
+        for label, unorientedList := range unoriented {
+            for i, scanner := range unorientedList {
+                for _, orientedScanner := range oriented {
+                    // get all pairs of points between orientedScanner and scanner
+                    pointPairs := pairs(orientedScanner, scanner)
+                    for _, pair := range pointPairs {
+                        offsetVector := vector(pair[1], pair[0]) // translate from unoriented to oriented
+                        nOverlap := overlapping(scanner, orientedScanner, offsetVector) // count the number of overlapping points if we apply the offset to scanner
+                        if nOverlap > max {
+                            max = nOverlap
+                            if nOverlap >= minTolerance {
+                                acceptableOrientedIndex = i
+                                removeLabel = label
+                                translation = offsetVector
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if acceptableOrientedIndex > -1 {
+            // we found an index (rotation of some scanner of label "foo") with a maximal overlap greater than minimal tolerance
+            // count it as oriented
+            nowOriented := unoriented[removeLabel][acceptableOrientedIndex]
+            nowOriented.translate(translation)
+            logger.Logs.Infof("Scanner with label %s has origin at %v", removeLabel, translation)
+            oriented = append(oriented, nowOriented)
+            delete(unoriented, removeLabel)
+            origins = append(origins, translation)
+        }
+    }
+    max := 0
+    for i := 0; i < len(origins); i++ {
+        for j := i + 1; j < len(origins); j++ {
+            dx := origins[i].x - origins[j].x
+            dy := origins[i].y - origins[j].y
+            dz := origins[i].z - origins[j].z
+            if dx < 0 {
+                dx = -dx
+            }
+            if dy < 0 {
+                dy = -dy
+            }
+            if dz < 0 {
+                dz = -dz
+            }
+            if dx + dy + dz > max {
+                max = dx + dy + dz
+            }
+        }
+    }
+    return max
 }
