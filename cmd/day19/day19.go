@@ -2,7 +2,6 @@ package main
 
 import (
     "fmt"
-    "math"
     "regexp"
     "strconv"
     logger "advent2021/adventlogger"
@@ -17,38 +16,34 @@ func (p Point) String() string {
     return fmt.Sprintf("%d,%d,%d", p.x, p.y, p.z)
 }
 
-func GetDist3D(a, b Point) float64 {
-    return math.Sqrt(float64((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z)))
-}
-
 func vector(a, b Point) Point {
     return Point{x: b.x - a.x, y: b.y - a.y, z: b.z - a.z}
 }
 
-type ScannerDistsMap map[float64][][]int // map distance between (sets of) two indices (Points) in a Scanner
-
 type Scanner struct {
     points []Point
     uniqPoints map[Point]struct{}
-    distMap ScannerDistsMap
     label string
 }
 
 func NewScanner(label string) *Scanner {
     points := make([]Point, 0)
     uniqPoints := make(map[Point]struct{})
-    distMap := make(ScannerDistsMap)
-    return &Scanner{points: points, uniqPoints: uniqPoints, distMap: distMap, label: label}
+    return &Scanner{points: points, uniqPoints: uniqPoints, label: label}
 }
 
-func (s Scanner) Print() {
-    fmt.Printf("Scanner %s has Points: %s\n", s.label, fmt.Sprint(s.uniqPoints))
-    fmt.Println("Distances:")
-    for dist, indexList := range s.distMap {
-        for _, indices := range indexList {
-            fmt.Printf("(%v -> %v) = %f\n", s.points[indices[0]], s.points[indices[1]], dist)
-        }
+func (s *Scanner) dup() *Scanner {
+    newScan := NewScanner(s.label)
+    newScan.points = make([]Point, 0)
+    for _, point := range s.points {
+        newScan.points = append(newScan.points, point)
+        newScan.uniqPoints[point] = struct{}{}
     }
+    return newScan
+}
+
+func (s Scanner) String() string {
+    return fmt.Sprintf("%s, Points: %s", s.label, fmt.Sprint(s.points))
 }
 
 func (s *Scanner) rotate90x() {
@@ -72,34 +67,22 @@ func (s *Scanner) rotate90z() {
     }
 }
 
-func (s *Scanner) InternalDistances() {
+func (s *Scanner) translate(offsetVector Point) {
+    points := make([]Point, 0)
     uniqPoints := make(map[Point]struct{})
-    distMap := make(map[float64][][]int)
     for _, point := range s.points {
-        uniqPoints[point] = struct{}{}
+        translated := Point{point.x + offsetVector.x, point.y + offsetVector.y, point.z + offsetVector.z}
+        points = append(points, translated)
+        uniqPoints[translated] = struct{}{}
     }
-    reducePoints := make([]Point, 0)
-    for point := range uniqPoints {
-        reducePoints = append(reducePoints, point)
-    }
-    for i := 0; i < len(reducePoints); i++ {
-        for j := i + 1; j < len(reducePoints); j++ {
-            dist := GetDist3D(reducePoints[i], reducePoints[j])
-            if _, ok := distMap[dist]; ok {
-                distMap[dist] = append(distMap[dist], []int{i, j})
-            } else {
-                distMap[dist] = [][]int{{i, j}}
-            }
-        }
-    }
-    s.distMap = distMap
+    s.points = points
     s.uniqPoints = uniqPoints
-    s.points = reducePoints
 }
 
-func (s *Scanner) reorient(matchVector Point, index1, index2 int) int {
-    // Reorient all points in the scanner (around the scanner as origin) until the points at index1 and index2 match
-    // the vector
+
+func (s *Scanner) createOrientations() []*Scanner {
+    // create all possible orientations of the scanner and return them
+    allRotations := make([]*Scanner, 0)
     for i := 0; i < 6; i++ {
         if i == 4 {
             // We did 4 "lateral" faces, time for "top"
@@ -112,41 +95,11 @@ func (s *Scanner) reorient(matchVector Point, index1, index2 int) int {
         }
         for j := 0; j < 4; j++ {
             s.rotate90x()
-            // check vec against index1->index2 here
-            vec := vector(s.points[index1], s.points[index2])
-            logger.Logs.Infof("Checking origin vector (%v) against 'forward' rotated vector (%s -> %s): (%v)", matchVector, s.points[index1], s.points[index2], vec)
-            if matchVector == vec {
-                // oriented correctly, return reference point for translation
-                return index1
-            }
-            vec = vector(s.points[index2], s.points[index1])
-            logger.Logs.Infof("Checking origin vector (%v) against 'reverse' rotated vector (%v)", matchVector, vec)
-            if matchVector == vec {
-                // oriented correctly, return reference point for translation
-                return index2
-            }
+            allRotations = append(allRotations, s.dup())
         }
         s.rotate90y() // next "lateral" face
     }
-    panic("Didn't find any orientation among 24 orientations of a cube to match comparison vector " + fmt.Sprint(matchVector))
-}
-
-func (s *Scanner) absorb(other *Scanner, originPoint Point, refIndex int) {
-    // s should always be the "origin"; absorb scanner's points relative to originPoint's origin
-    logger.Logs.Infof("Origin scanner is absorbing scanner %s", other.label)
-    s.Print()
-    other.Print()
-    referencePoint := other.points[refIndex]
-    offsetVector := vector(originPoint, referencePoint)
-    if offsetVector.x != 0 && offsetVector.y != 0 && offsetVector.z != 0 {
-        panic(fmt.Sprintf("Did not reorient scanner %s correctly!", other.label))
-    }
-    for _, point := range s.points {
-        newPoint := Point{offsetVector.x + point.x, offsetVector.y + point.y, offsetVector.z + point.z}
-        logger.Logs.Infof("Scanner %s translating off of origin scanner's point %s (corrected: %s)", s.label, point, newPoint)
-        s.points = append(s.points, newPoint)
-    }
-    s.InternalDistances()
+    return allRotations
 }
 
 func scannersFromInput(lines []string) []*Scanner {
@@ -154,7 +107,6 @@ func scannersFromInput(lines []string) []*Scanner {
     scanner := NewScanner("Blank")
     for _, line := range lines {
         if line == "" {
-            scanner.InternalDistances()
             scanners = append(scanners, scanner)
             continue
             // complete the "scanner"
@@ -173,29 +125,34 @@ func scannersFromInput(lines []string) []*Scanner {
             zInt, _ := strconv.Atoi(z)
             p := Point{x: xInt, y: yInt, z: zInt}
             scanner.points = append(scanner.points, p)
+            scanner.uniqPoints[p] = struct{}{}
         }
     }
-    scanner.InternalDistances()
     scanners = append(scanners, scanner) // loop exits before final scanner is added
     return scanners
 }
 
-//func uniqPointsEqual(a, b map[Point]struct{}) bool {
-//    if len(a) != len(b) {
-//        return false
-//    }
-//    for point := range a {
-//        if _, ok := b[point]; ! ok {
-//            return false
-//        }
-//    }
-//    for point := range b {
-//        if _, ok := a[point]; ! ok {
-//            return false
-//        }
-//    }
-//    return true
-//}
+func pairs(scanner, oriented *Scanner) [][]Point {
+    allPairs := make([][]Point, 0)
+    for _, scannerPoint := range scanner.points {
+        for _, orientedPoint := range oriented.points {
+            pair := []Point{scannerPoint, orientedPoint}
+            allPairs = append(allPairs, pair)
+        }
+    }
+    return allPairs
+}
+
+func overlapping(scanner, oriented *Scanner, offsetVector Point) int {
+    count := 0
+    for _, point := range scanner.points {
+        adjusted := Point{point.x + offsetVector.x, point.y + offsetVector.y, point.z + offsetVector.z}
+        if _, ok := oriented.uniqPoints[adjusted]; ok {
+            count += 1
+        }
+    }
+    return count
+}
 
 func main() {
     result := part1()
@@ -207,58 +164,75 @@ func main() {
 func part1() int {
     lines := reader.LinesFromFile("test.txt")
     scanners := scannersFromInput(lines)
+    totalScanners := len(scanners)
     logger.Logs.Infof("Got scanners:")
     for _, scanner := range scanners {
-        scanner.Print()
+        logger.Logs.Infof("%v", scanner)
     }
     origin := scanners[0]
     scanners = scanners[1:]
-    for len(scanners) > 0 {
-        // stop when we've successfully reoriented and absorbed all scanners to origin
-        var scannerToReorientIndex int
-        var dist float64
-        DISTFOUND:
-        for i, scanner := range scanners {
-        // find a unique distance that only origin and scanner share; unique means within origin and scanner as well
-            for distance := range origin.distMap {
-                if len(origin.distMap[dist]) > 1 {
-                    continue
-                }
-                if _, ok := scanner.distMap[distance]; ok {
-                    if len(scanner.distMap[distance]) > 1 {
-                        continue
+    unoriented := make(map[string][]*Scanner)
+    for _, scanner := range scanners {
+        unorientedList := make([]*Scanner, 0)
+        unoriented[scanner.label] = append(unorientedList, scanner.createOrientations()...)
+    }
+    oriented := make([]*Scanner, 0)
+    oriented = append(oriented, origin)
+    minTolerance := 12
+    translation := Point{0, 0, 0}
+    for len(oriented) < totalScanners {
+        logger.Logs.Infof("Currently at %d out of %d oriented scanners", len(oriented), totalScanners)
+        max := 0
+        acceptableOrientedIndex := -1
+        orientedIndex := -1
+        removeLabel := ""
+        for label, unorientedList := range unoriented {
+            logger.Logs.Infof("Checking all unoriented scanners for label %s (%d scanners)", label, len(unorientedList))
+            for i, scanner := range unorientedList {
+                for j, orientedScanner := range oriented {
+                    logger.Logs.Infof("Checking %dth unoriented scanner for label %s against %dth oriented scanner (label %s)", i, label, j, orientedScanner.label)
+                    // get all pairs of points between orientedScanner and scanner
+                    pointPairs := pairs(orientedScanner, scanner)
+                    for _, pair := range pointPairs {
+                        offsetVector := vector(pair[1], pair[0]) // translate from unoriented to oriented
+                        nOverlap := overlapping(scanner, orientedScanner, offsetVector) // count the number of overlapping points if we apply the offset to scanner
+                        if nOverlap > max {
+                            max = nOverlap
+                            if nOverlap >= minTolerance {
+                                logger.Logs.Infof("Found an orientation that works! Scanner (%v) overlaps with oriented scanner (%v) at %d points", scanner, orientedScanner, nOverlap)
+                                acceptableOrientedIndex = i
+                                orientedIndex = j
+                                removeLabel = label
+                                translation = offsetVector
+                            }
+                        }
                     }
-                    dist = distance
-                    scannerToReorientIndex = i
-                    logger.Logs.Infof("Origin scanner and scanner %s each have a distance %f which spans ONLY two points per scanner", scanners[scannerToReorientIndex].label, dist)
-                    break DISTFOUND
+                    logger.Logs.Infof("Maximum overlap between %dth unoriented scanner for label %s and %dth oriented scanner (label %s): %d", i, label, j, orientedScanner.label, max)
                 }
             }
         }
-        // reorient scanner to origin
-        logger.Logs.Infof("origin.distMap[%f] == %v", dist, origin.distMap[dist])
-        originPoint1Index := origin.distMap[dist][0][0]
-        originPoint2Index := origin.distMap[dist][0][1]
-        originP1 := origin.points[originPoint1Index]
-        originP2 := origin.points[originPoint2Index]
-        originVector := vector(originP1, originP2)
-        logger.Logs.Infof("Setting origin vector off of points %s -> %s, value %s", originP1, originP2, originVector)
-        scannerPoint1Index := scanners[scannerToReorientIndex].distMap[dist][0][0]
-        scannerPoint2Index := scanners[scannerToReorientIndex].distMap[dist][0][1]
-        scannerPoint1 := scanners[scannerToReorientIndex].points[scannerPoint1Index]
-        scannerPoint2 := scanners[scannerToReorientIndex].points[scannerPoint2Index]
-        logger.Logs.Infof("Reorienting scanner %s with reference points %s -> %s", scanners[scannerToReorientIndex].label, scannerPoint1, scannerPoint2)
-        scannerPointIndex := scanners[scannerToReorientIndex].reorient(originVector, scannerPoint1Index, scannerPoint2Index)
-        origin.absorb(scanners[scannerToReorientIndex], originP1, scannerPointIndex)
-        scanners[scannerToReorientIndex] = scanners[len(scanners) - 1]
-        scanners = scanners[:len(scanners) - 1]
+        if acceptableOrientedIndex > -1 {
+            // we found an index (rotation of some scanner of label "foo") with a maximal overlap greater than minimal tolerance
+            // count it as oriented
+            nowOriented := unoriented[removeLabel][acceptableOrientedIndex]
+            logger.Logs.Infof("(Pre-translated along vector %v) Scanner '%v' considered oriented", translation, nowOriented)
+            nowOriented.translate(translation)
+            logger.Logs.Infof("(Post-translated along vector %v) Scanner '%v' considered oriented", translation, nowOriented)
+            logger.Logs.Infof("Scanner %s (relative to scanner %s) has origin at %v", nowOriented.label, oriented[orientedIndex].label, vector(translation, Point{0, 0, 0}))
+            oriented = append(oriented, nowOriented)
+            delete(unoriented, removeLabel)
+        }
     }
-    logger.Logs.Infof("Unique points: %v", origin.uniqPoints)
-    return len(origin.uniqPoints)
+    uniqPoints := make(map[Point]struct{})
+    for _, scanner := range oriented {
+        for _, point := range scanner.points {
+            uniqPoints[point] = struct{}{}
+        }
+    }
+    return len(uniqPoints)
 }
 
 func part2() int {
     // lines := reader.LinesFromFile("test.txt")
     return 4 
 }
-
