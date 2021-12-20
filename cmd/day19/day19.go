@@ -97,7 +97,9 @@ func (s *Scanner) createOrientations() []*Scanner {
             s.rotate90x()
             allRotations = append(allRotations, s.dup())
         }
-        s.rotate90y() // next "lateral" face
+        if i < 4 {
+            s.rotate90y() // next "lateral" face
+        }
     }
     return allRotations
 }
@@ -162,13 +164,9 @@ func main() {
 }
 
 func part1() int {
-    lines := reader.LinesFromFile("test.txt")
+    lines := reader.LinesFromFile("input.txt")
     scanners := scannersFromInput(lines)
     totalScanners := len(scanners)
-    logger.Logs.Infof("Got scanners:")
-    for _, scanner := range scanners {
-        logger.Logs.Infof("%v", scanner)
-    }
     origin := scanners[0]
     scanners = scanners[1:]
     unoriented := make(map[string][]*Scanner)
@@ -181,16 +179,12 @@ func part1() int {
     minTolerance := 12
     translation := Point{0, 0, 0}
     for len(oriented) < totalScanners {
-        logger.Logs.Infof("Currently at %d out of %d oriented scanners", len(oriented), totalScanners)
         max := 0
         acceptableOrientedIndex := -1
-        orientedIndex := -1
         removeLabel := ""
         for label, unorientedList := range unoriented {
-            logger.Logs.Infof("Checking all unoriented scanners for label %s (%d scanners)", label, len(unorientedList))
             for i, scanner := range unorientedList {
-                for j, orientedScanner := range oriented {
-                    logger.Logs.Infof("Checking %dth unoriented scanner for label %s against %dth oriented scanner (label %s)", i, label, j, orientedScanner.label)
+                for _, orientedScanner := range oriented {
                     // get all pairs of points between orientedScanner and scanner
                     pointPairs := pairs(orientedScanner, scanner)
                     for _, pair := range pointPairs {
@@ -199,15 +193,12 @@ func part1() int {
                         if nOverlap > max {
                             max = nOverlap
                             if nOverlap >= minTolerance {
-                                logger.Logs.Infof("Found an orientation that works! Scanner (%v) overlaps with oriented scanner (%v) at %d points", scanner, orientedScanner, nOverlap)
                                 acceptableOrientedIndex = i
-                                orientedIndex = j
                                 removeLabel = label
                                 translation = offsetVector
                             }
                         }
                     }
-                    logger.Logs.Infof("Maximum overlap between %dth unoriented scanner for label %s and %dth oriented scanner (label %s): %d", i, label, j, orientedScanner.label, max)
                 }
             }
         }
@@ -215,10 +206,7 @@ func part1() int {
             // we found an index (rotation of some scanner of label "foo") with a maximal overlap greater than minimal tolerance
             // count it as oriented
             nowOriented := unoriented[removeLabel][acceptableOrientedIndex]
-            logger.Logs.Infof("(Pre-translated along vector %v) Scanner '%v' considered oriented", translation, nowOriented)
             nowOriented.translate(translation)
-            logger.Logs.Infof("(Post-translated along vector %v) Scanner '%v' considered oriented", translation, nowOriented)
-            logger.Logs.Infof("Scanner %s (relative to scanner %s) has origin at %v", nowOriented.label, oriented[orientedIndex].label, vector(translation, Point{0, 0, 0}))
             oriented = append(oriented, nowOriented)
             delete(unoriented, removeLabel)
         }
