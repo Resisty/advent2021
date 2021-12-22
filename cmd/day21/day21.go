@@ -172,15 +172,15 @@ func winners(gameOver int, turnPlayer, otherPlayer Player, cache Cache) (int, in
         boardState := NewBoardState(copyPlayer, otherPlayer, roll)
         copyPlayer.position = boardState.position
         copyPlayer.score = boardState.score
-        if wins, ok := cache[boardState]; ok {
-            sum1 += (wins[0] * numUniverses) 
-            sum2 += (wins[1] * numUniverses)
-        } else {
-            otherPlayerWins, turnPlayerWins := winners(gameOver, otherPlayer, copyPlayer, cache)
-            sum2 += (otherPlayerWins * numUniverses)
-            sum1 += (turnPlayerWins * numUniverses)
-            cache[boardState] = []int{turnPlayerWins * numUniverses, otherPlayerWins * numUniverses}
-        }
+        //if wins, ok := cache[boardState]; ok {
+        //    sum1 += (wins[0] * numUniverses) 
+        //    sum2 += (wins[1] * numUniverses)
+        //} else {
+        otherPlayerWins, turnPlayerWins := winners(gameOver, otherPlayer, copyPlayer, cache)
+        sum2 += (otherPlayerWins * numUniverses)
+        sum1 += (turnPlayerWins * numUniverses)
+        cache[boardState] = []int{turnPlayerWins * numUniverses, otherPlayerWins * numUniverses}
+        //}
     }
     return sum1, sum2
 }
@@ -206,7 +206,7 @@ func part1() int {
 }
 
 func part2() int {
-    lines := reader.LinesFromFile("test.txt")
+    lines := reader.LinesFromFile("input.txt")
     game := gameFromInput(lines, 1000, NewD100())
     player1 := game.players[0]
     player2 := game.players[1]
