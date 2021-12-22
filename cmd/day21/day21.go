@@ -145,14 +145,7 @@ type BoardState struct {
     position, score, roll, otherPos, otherScore int
 }
 
-type Cache struct {
-    cache map[BoardState][]int
-}
-
-func NewCache() *Cache {
-    cache := make(map[BoardState][]int)
-    return &Cache{cache}
-}
+type Cache map[BoardState][]int
 
 func NewBoardState(p1, p2 Player, roll int) BoardState {
     position := ((p1.position + roll - 1 ) % 10) + 1
@@ -164,7 +157,7 @@ func (npr BoardState) String() string {
     return fmt.Sprintf("position %d, score %d, rolls a %d", npr.position, npr.score, npr.roll)
 }
 
-func winners(gameOver int, turnPlayer, otherPlayer Player, cache *Cache) (int, int){
+func winners(gameOver int, turnPlayer, otherPlayer Player, cache Cache) (int, int){
     if turnPlayer.score >= gameOver {
         logger.Logs.Infof("This should never get logged")
         return 1, 0
@@ -175,16 +168,18 @@ func winners(gameOver int, turnPlayer, otherPlayer Player, cache *Cache) (int, i
     sum1, sum2 := 0, 0
     possibleRolls := map[int]int{3: 1, 4: 3, 5: 6, 6: 7, 7: 6, 8: 3, 9: 1}
     for roll, numUniverses := range possibleRolls {
-        boardState := NewBoardState(turnPlayer, otherPlayer, roll)
-        turnPlayer.position = boardState.position
-        turnPlayer.score = boardState.score
-        if wins, ok := cache.cache[boardState]; ok {
-            return wins[0], wins[1]
+        copyPlayer := Player{turnPlayer.number, turnPlayer.position, turnPlayer.score}
+        boardState := NewBoardState(copyPlayer, otherPlayer, roll)
+        copyPlayer.position = boardState.position
+        copyPlayer.score = boardState.score
+        if wins, ok := cache[boardState]; ok {
+            sum1 += (wins[0] * numUniverses) 
+            sum2 += (wins[1] * numUniverses)
         } else {
-            otherPlayerWins, turnPlayerWins := winners(gameOver, otherPlayer, turnPlayer, cache)
-            sum2 += otherPlayerWins
-            sum1 += turnPlayerWins
-            cache.cache[boardState] = []int{turnPlayerWins * numUniverses, otherPlayerWins * numUniverses}
+            otherPlayerWins, turnPlayerWins := winners(gameOver, otherPlayer, copyPlayer, cache)
+            sum2 += (otherPlayerWins * numUniverses)
+            sum1 += (turnPlayerWins * numUniverses)
+            cache[boardState] = []int{turnPlayerWins * numUniverses, otherPlayerWins * numUniverses}
         }
     }
     return sum1, sum2
@@ -215,10 +210,10 @@ func part2() int {
     game := gameFromInput(lines, 1000, NewD100())
     player1 := game.players[0]
     player2 := game.players[1]
-    for i:= 1; i < 11; i++ {
-        cache := NewCache()
+    for i:= 1; i < 22; i++ {
+        cache := make(Cache)
         player1wins, player2wins := winners(i, *player1, *player2, cache)
-        logger.Logs.Infof("%d %d", player1wins, player2wins)
+        logger.Logs.Infof("Target score %d: %d %d", i, player1wins, player2wins)
     }
     return 4
 }
