@@ -136,13 +136,8 @@ func gameFromInput(lines []string, gameOver int, dice Die) *Game {
 
 // ffs, start everything over for part 2
 
-// copied here to keep it on one screen
-// type Player struct {
-//     number, position, score int
-// }
-
 type BoardState struct {
-    position, score, roll, otherPos, otherScore int
+    turnLabel, position, score, otherPos, otherScore int
 }
 
 type Cache map[BoardState][]int
@@ -150,21 +145,10 @@ type Cache map[BoardState][]int
 func NewBoardState(p1, p2 Player, roll int) BoardState {
     position := ((p1.position + roll - 1 ) % 10) + 1
     score := p1.score + position
-    return BoardState{position, score, roll, p2.position, p2.score}
-}
-
-func (npr BoardState) String() string {
-    return fmt.Sprintf("position %d, score %d, rolls a %d", npr.position, npr.score, npr.roll)
+    return BoardState{p1.number, position, score, p2.position, p2.score}
 }
 
 func winners(gameOver int, turnPlayer, otherPlayer Player, cache Cache) (int, int){
-    if turnPlayer.score >= gameOver {
-        logger.Logs.Infof("This should never get logged")
-        return 1, 0
-    }
-    if otherPlayer.score >= gameOver {
-        return 0, 1
-    }
     sum1, sum2 := 0, 0
     possibleRolls := map[int]int{3: 1, 4: 3, 5: 6, 6: 7, 7: 6, 8: 3, 9: 1}
     for roll, numUniverses := range possibleRolls {
@@ -172,15 +156,19 @@ func winners(gameOver int, turnPlayer, otherPlayer Player, cache Cache) (int, in
         boardState := NewBoardState(copyPlayer, otherPlayer, roll)
         copyPlayer.position = boardState.position
         copyPlayer.score = boardState.score
-        //if wins, ok := cache[boardState]; ok {
-        //    sum1 += (wins[0] * numUniverses) 
-        //    sum2 += (wins[1] * numUniverses)
-        //} else {
-        otherPlayerWins, turnPlayerWins := winners(gameOver, otherPlayer, copyPlayer, cache)
-        sum2 += (otherPlayerWins * numUniverses)
-        sum1 += (turnPlayerWins * numUniverses)
-        cache[boardState] = []int{turnPlayerWins * numUniverses, otherPlayerWins * numUniverses}
-        //}
+        if copyPlayer.score >= gameOver {
+            sum1 += numUniverses
+        } else {
+            if wins, ok := cache[boardState]; ok {
+                sum1 += (wins[0] * numUniverses) 
+                sum2 += (wins[1] * numUniverses)
+            } else {
+                otherPlayerWins, turnPlayerWins := winners(gameOver, otherPlayer, copyPlayer, cache)
+                sum2 += (otherPlayerWins * numUniverses)
+                sum1 += (turnPlayerWins * numUniverses)
+                cache[boardState] = []int{turnPlayerWins, otherPlayerWins}
+            }
+        }
     }
     return sum1, sum2
 }
