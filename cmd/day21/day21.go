@@ -198,10 +198,11 @@ func part2() int {
     game := gameFromInput(lines, 1000, NewD100())
     player1 := game.players[0]
     player2 := game.players[1]
-    for i:= 1; i < 22; i++ {
-        cache := make(Cache)
-        player1wins, player2wins := winners(i, *player1, *player2, cache)
-        logger.Logs.Infof("Target score %d: %d %d", i, player1wins, player2wins)
+    cache := make(Cache)
+    player1wins, player2wins := winners(21, *player1, *player2, cache)
+    if player1wins > player2wins {
+        return player1wins
+    } else {
+        return player2wins
     }
-    return 4
 }
