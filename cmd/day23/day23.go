@@ -251,32 +251,40 @@ type Cache map[string][]*Board
 
 func allBoardStates(board *Board, cache, finished Cache) []*Board {
     boards := make([]*Board, 0)
-    logger.Logs.Infof("Top of allBoarStates, printing board...")
-    fmt.Print(board.Sprint())
     for _, amphipod := range board.amphipods {
         moves := amphipod.LegalMoves(board)
         for _, move := range moves {
             copyPod := amphipod.Dup()
             copyBoard, copyPod := board.Dup(copyPod) // copy board around moving 'pod
             copyBoard.Move(copyPod, move)
+            if copyBoard.energy == 3470 {
+                logger.Logs.Infof("Board dump:")
+                fmt.Print(copyBoard.Sprint())
+            }
             if copyBoard.Dead() {
                 // we don't care about dead-end boards
-                logger.Logs.Infof("Board is dead, discard and check next move.")
+                //logger.Logs.Infof("Board is dead, discard and check next move.")
                 continue
             }
             if copyBoard.Finished() {
+                logger.Logs.Infof("Found a finished board...")
+                fmt.Print(copyBoard.Sprint())
                 // we found an answer, check the cache
                 minFinished := copyBoard
                 if finishedBoards, ok := finished[board.Hash()]; ok {
                     minFinished = cheapestBoard(append(finishedBoards, minFinished))
                 }
                 finished[board.Hash()] = []*Board{minFinished}
-                return []*Board{minFinished}
+                boards = append(boards, minFinished)
             } else {
                 // check the cache
-                if _, ok := cache[copyBoard.Hash()]; ok {
+                if nextBoards, ok := cache[copyBoard.Hash()]; ok {
                     // hit, we've been here before -> loop
-                    continue
+                    minBoard := cheapestBoard(append(nextBoards, copyBoard))
+                    if minBoard == copyBoard {
+                        cache[copyBoard.Hash()] = []*Board{copyBoard}
+                        boards = append(boards, allBoardStates(minBoard, cache, finished)...)
+                    }
                 } else {
                     // miss, recurse and cache
                     cache[copyBoard.Hash()] = []*Board{copyBoard}
@@ -331,8 +339,9 @@ func main() {
 }
 
 func part1() int {
-    lines := reader.LinesFromFile("test.txt")
+    lines := reader.LinesFromFile("input.txt")
     start := boardFromInput(lines)
+    logger.Logs.Infof("Got pods: %v", start.amphipods)
     allBoards := allBoardStates(start, make(Cache), make(Cache))
     cheapest := cheapestBoard(allBoards) 
     fmt.Print(cheapest.Sprint())
